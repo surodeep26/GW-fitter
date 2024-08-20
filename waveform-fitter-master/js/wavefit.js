@@ -180,75 +180,105 @@ WaveFitter.prototype.makeUrl= function(newKeys,full){
     return newUrl;
 }
 WaveFitter.prototype.loadLangDefault = function(){
-    var _wf=this;
-    var reload = (_wf.lang) ? true:false;
-    _wf.fileInLangDefault="lang/lang_en.json";
-    d3.json(_wf.fileInLangDefault, function(error, dataIn) {
-        if (error){
-            console.log(error);
-            alert("Fatal error loading input file: '"+_wf.fileInLangDefault+"'. Sorry!")
+    var _wf = this;
+
+    // Hard-coded JSON data
+    var dataIn = {
+        "text.title": "Waveform Fitter",
+        "text.close": "Close",
+        "text.about.heading": "About",
+        "text.about.intro": "This web-app allows you to match simulation of gravitational wave data to real data originating from the merger of two black holes.",
+        "text.about.params": "Use the sliders to adjust the basic parameters of the simulation to match the data. The parameters are:",
+        "text.about.param.mass": "The total mass of the two black holes, measured in M<sub>☉</sub> (Solar mass; the mass of the Sun)",
+        "text.about.param.dist": "The distance of the source from Earth in Mpc (Megaparsec; 3.26 million light years).",
+        "text.about.data": "Data is for GW150914 (from the LIGO-Hanford detector). Simulation assumes equal-mass.",
+        "text.about.credit": "Written and maintained by Chris North (Cardiff University) for the LIGO-Virgo Collaboration. Simulation credit: Mark Hannam (Cardiff University). <a href='https://github.com/cardiffgravity/waveform-fitter'>Source code</a>",
+        "text.about.button": "About",
+        "text.language.heading": "Change Language",
+        "text.language.button": "Change Language",
+        "data.totalmass": "Total Mass<br>(M<sub>☉</sub>)",
+        "data.distance": "Distance<br>(Mpc)",
+        "text.legend.data": "Data",
+        "text.legend.simulation": "Simulation",
+        "text.axis.time": "Time (s)",
+        "text.axis.strain": "Strain x10^21"
+    };
+
+    // Processing the hard-coded data
+    for (var ld in dataIn) {
+        if (dataIn.hasOwnProperty(ld) && ld !== "metadata" && typeof dataIn[ld] !== "string") {
+            dataIn[ld] = dataIn[ld].text;
         }
-        if(_wf.debug){console.log('loaded:',_wf.fileInLangDefault);}
-        for (ld in dataIn){
-            if ((ld!="metadata")&(typeof dataIn[ld]!="string")){
-                dataIn[ld]=dataIn[ld].text;
-            }
+    }
+
+    _wf.langdictDefault = dataIn;
+    _wf.loaded++;
+    if (_wf.loaded === _wf.toLoad) {
+        _wf.whenLoaded();
+    }
+}
+
+WaveFitter.prototype.loadLang = function(lang, reload = false) {
+    var _wf = this;
+    if (this.debug) { console.log('new language:', lang, '; stored language', _wf.lang); }
+    _wf.lang = lang;
+    _wf.langshort = (_wf.lang.indexOf('-') > 0 ? _wf.lang.substring(0, _wf.lang.indexOf('-')) : _wf.lang.substring(0, 2));
+
+    // Hard-coded JSON data based on language
+    var dataIn = {};
+    switch (_wf.lang) {
+        case 'en':
+            dataIn = {
+                "text.title": "Waveform Fitter",
+                "text.close": "Close",
+                "text.about.heading": "About",
+                "text.about.intro": "This web-app allows you to match simulation of gravitational wave data to real data originating from the merger of two black holes.",
+                "text.about.params": "Use the sliders to adjust the basic parameters of the simulation to match the data. The parameters are:",
+                "text.about.param.mass": "The total mass of the two black holes, measured in M<sub>☉</sub> (Solar mass; the mass of the Sun)",
+                "text.about.param.dist": "The distance of the source from Earth in Mpc (Megaparsec; 3.26 million light years).",
+                "text.about.data": "Data is for GW150914 (from the LIGO-Hanford detector). Simulation assumes equal-mass.",
+                "text.about.credit": "Written and maintained by Chris North (Cardiff University) for the LIGO-Virgo Collaboration. Simulation credit: Mark Hannam (Cardiff University). <a href='https://github.com/cardiffgravity/waveform-fitter'>Source code</a>",
+                "text.about.button": "About",
+                "text.language.heading": "Change Language",
+                "text.language.button": "Change Language",
+                "data.totalmass": "Total Mass<br>(M<sub>☉</sub>)",
+                "data.distance": "Distance<br>(Mpc)",
+                "text.legend.data": "Data",
+                "text.legend.simulation": "Simulation",
+                "text.axis.time": "Time (s)",
+                "text.axis.strain": "Strain x10^21"
+            };
+            break;
+        // Add cases for other languages if needed
+        default:
+            // Fallback or default language data
+            dataIn = {
+                // Default data similar to the 'en' case or other language
+            };
+            break;
+    }
+
+    // Processing the hard-coded data
+    for (var ld in dataIn) {
+        if (dataIn.hasOwnProperty(ld) && ld !== "metadata" && typeof dataIn[ld] !== "string") {
+            dataIn[ld] = dataIn[ld].text;
         }
-        _wf.langdictDefault=dataIn;
+    }
+
+    _wf.langdict = dataIn;
+
+    if (reload) {
+        if (_wf.debug) { console.log('reloaded language', _wf.lang); }
+        _wf.setLang();
+    } else {
+        if (_wf.debug) { console.log('loaded language', _wf.lang); }
         _wf.loaded++;
-        if (_wf.loaded==_wf.toLoad){
+        if (_wf.loaded >= _wf.toLoad) {
             _wf.whenLoaded();
         }
-    });
+    }
 }
-WaveFitter.prototype.loadLang = function(lang,reload=false){
-    var _wf=this;
-    if (this.debug){console.log('new language:',lang,'; stored language',_wf.lang)}
-    _wf.lang=lang;
-    _wf.langshort = (_wf.lang.indexOf('-') > 0 ? _wf.lang.substring(0,_wf.lang.indexOf('-')) : _wf.lang.substring(0,2));
-    _wf.fileInLang="lang/lang_"+lang+".json";
-    d3.json(_wf.fileInLang, function(error, dataIn) {
-        if (error){
-            if (_wf.lang==_wf.defaults.lang){
-                console.log(error);
-                alert("Fatal error loading input file: '"+_wf.fileInLang+"'. Sorry!")
-            }else if (_wf.langshort!=_wf.lang){
-                if(_wf.debug){console.log('Error loading language '+_wf.lang+'. Displaying '+_wf.langshort+' instead');}
-                if (_wf.urlVars.lang){
-                    console.log('Error loading language '+_wf.lang+'. Displaying '+_wf.langshort+' instead');
-                    // _wf.updateUrl();
-                    // window.location.replace({},null,_wf.makeUrl({'lang':_wf.defaults.lang}));
-                }
-                // window.location.replace(_wf.makeUrl({'lang':_wf.langshort}));
-            }else{
-                if(_wf.debug){console.log('Error loading language '+_wf.lang+'. Reverting to '+_wf.defaults.lang+' as default');}
-                if (_wf.urlVars.lang){
-                    alert('Error loading language '+_wf.lang+'. Reverting to '+_wf.defaults.lang+' as default');
-                }
-                // window.location.replace(_wf.makeUrl({'lang':_wf.defaults.lang}));
-            }
-        }
-        if(_wf.debug){console.log('loaded:',_wf.fileInLang);}
-        for (ld in dataIn){
-            if ((ld!="metadata")&(typeof dataIn[ld]!="string")){
-                dataIn[ld]=dataIn[ld].text;
-            }
-        }
-        _wf.langdict=dataIn;
-        if (reload){
-            if (_wf.debug){console.log('reloaded language',_wf.lang);}
-            // window.location.replace(_wf.makeUrl({'lang':_wf.lang}));
-            _wf.setLang();
-        }else{
-            if (_wf.debug){console.log('loaded language',_wf.lang);}
-            _wf.loaded++;
-            // _wf.setLang();
-            if (_wf.loaded>=_wf.toLoad){
-                _wf.whenLoaded();
-            }
-        }
-    });
-}
+
 WaveFitter.prototype.setLang = function(){
     var _wf=this;
     d3.selectAll('.translate').each(function(){
